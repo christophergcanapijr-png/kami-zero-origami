@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>KAMI // ZERO — Interactive 3D Origami Experience</title>
+    <meta
+      name="description"
+      content="Interactive WebGL & GLSL experience: from shattered fragments to living form."
+    />
+    <meta name="theme-color" content="#06070a" />
+    <meta name="color-scheme" content="dark only" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Google+Sans+Code:wght@400;500;700&family=Inter:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #16100b;
+        color: #f7f1e5;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+        cursor: none;
+      }
+
+      /* Fixed pre-canvas warm desert umber & parchment radial gradient */
+      #bg-gradient {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-color: #16100b;
+        background-image: radial-gradient(
+          ellipse 120vw 120vh at 50% 65%,
+          rgba(122, 76, 38, 0.55) 0%,
+          rgba(54, 34, 19, 0.82) 48%,
+          rgba(22, 16, 11, 1) 100%
+        );
+      }
+
+      #webgl {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        display: block;
+        touch-action: none;
+      }
+
+      #ui-container {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-Cz0HKSgv.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-RqOJ_1Yu.css">
+  </head>
+  <body>
+    <div id="bg-gradient" aria-hidden="true"></div>
+
+    <canvas
+      id="webgl"
+      role="img"
+      aria-label="Interactive 3D Shattered Origami Experience"
+    ></canvas>
+
+    <div id="ui-container" role="region" aria-label="Interface Controls">
+      <!-- Custom Origami Craftsman Tools Cursor (Bamboo/Ivory Hera Bone Folder + Brass Crease Protractor + Origami Pinwheel) -->
+      <div id="custom-cursor" aria-hidden="true">
+        <!-- Brass Origami Crease-Angle Protractor & Progress Gauge -->
+        <svg class="cursor-ring" viewBox="0 0 96 96">
+          <defs>
+            <linearGradient id="ivoryBladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fffdf7" />
+              <stop offset="48%" stop-color="#f2e3c6" />
+              <stop offset="100%" stop-color="#cfa972" />
+            </linearGradient>
+            <linearGradient id="bambooEdgeGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#9e7340" />
+              <stop offset="100%" stop-color="#e5c693" />
+            </linearGradient>
+            <linearGradient id="crimsonWrapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#c84b31" />
+              <stop offset="100%" stop-color="#7a2312" />
+            </linearGradient>
+          </defs>
+
+          <!-- Outer Brass Protractor Ring & 45-degree Crease Angle Ticks -->
+          <circle class="cursor-ring-track" cx="48" cy="48" r="34" />
+          <g class="cursor-protractor-ticks" stroke="rgba(238, 198, 128, 0.42)" stroke-width="1.2">
+            <line x1="48" y1="10" x2="48" y2="16" />
+            <line x1="48" y1="80" x2="48" y2="86" />
+            <line x1="10" y1="48" x2="16" y2="48" />
+            <line x1="80" y1="48" x2="86" y2="48" />
+            <line x1="21.1" y1="21.1" x2="25.4" y2="25.4" />
+            <line x1="74.9" y1="21.1" x2="70.6" y2="25.4" />
+            <line x1="21.1" y1="74.9" x2="25.4" y2="70.6" />
+            <line x1="74.9" y1="74.9" x2="70.6" y2="70.6" />
+          </g>
+
+          <!-- Progress Arc (Circumference of r=34 is 213.6) -->
+          <circle class="cursor-ring-progress" id="cursor-progress-circle" cx="48" cy="48" r="34" />
+
+          <!-- Miniature Origami Pinwheel (Kazaguruma) at the Hotspot Center -->
+          <g class="cursor-pinwheel" id="cursor-pinwheel">
+            <polygon points="48,48 48,38 54,43" fill="rgba(246, 229, 195, 0.85)" />
+            <polygon points="48,48 58,48 53,54" fill="rgba(209, 96, 61, 0.85)" />
+            <polygon points="48,48 48,58 42,53" fill="rgba(246, 229, 195, 0.85)" />
+            <polygon points="48,48 38,48 43,42" fill="rgba(209, 96, 61, 0.85)" />
+            <circle cx="48" cy="48" r="2.2" fill="#ffd98e" />
+          </g>
+        </svg>
+
+        <!-- Sculpted Bamboo/Ivory Hera (Origami Bone Folder & Crease Scorer) whose tip points at (48,48) -->
+        <svg class="cursor-bone-folder" viewBox="0 0 96 96">
+          <g class="bone-folder-group">
+            <!-- Soft drop shadow under the Bone Folder -->
+            <path
+              d="M49 49 L64 55 C74 59 83 68 89 77 C91 80 88 85 84 83 C75 77 66 68 62 58 Z"
+              fill="rgba(0, 0, 0, 0.48)"
+              transform="translate(2, 3)"
+            />
+            <!-- Upper Beveled Ivory Blade -->
+            <path
+              d="M48 48 L65 53 C75 57 85 66 91 75 C92 77 90 80 88 81 L48 48 Z"
+              fill="url(#ivoryBladeGrad)"
+              stroke="#fff8eb"
+              stroke-width="0.6"
+            />
+            <!-- Lower Shaded Bamboo Bevel -->
+            <path
+              d="M48 48 L88 81 C86 83 83 84 80 82 C71 76 62 66 58 56 L48 48 Z"
+              fill="url(#bambooEdgeGrad)"
+              stroke="#b8894f"
+              stroke-width="0.6"
+            />
+            <!-- Center Burnisher Crease Ridge Line -->
+            <line x1="48.5" y1="48.5" x2="87.5" y2="80.5" stroke="#fffdf9" stroke-width="0.9" opacity="0.85" />
+            <!-- Traditional Crimson Kumihimo Silk-Cord Handle Wrap -->
+            <path
+              d="M72 60 L85 71 L79 78 L66 67 Z"
+              fill="url(#crimsonWrapGrad)"
+              stroke="#f2c97d"
+              stroke-width="0.7"
+            />
+            <line x1="70" y1="63" x2="75" y2="74" stroke="#f2c97d" stroke-width="0.65" opacity="0.8" />
+            <line x1="75" y1="67" x2="80" y2="77" stroke="#f2c97d" stroke-width="0.65" opacity="0.8" />
+            <!-- Brass Eyelet Hole at Handle End -->
+            <circle cx="85.5" cy="77.5" r="1.8" fill="#18110b" stroke="#f5ce7e" stroke-width="1.0" />
+            <!-- Precision Scoring Tip Highlight -->
+            <circle class="bone-folder-tip" cx="48" cy="48" r="2.0" fill="#fff7df" />
+          </g>
+        </svg>
+
+        <span class="cursor-label" id="cursor-label">SCORE / HOLD</span>
+      </div>
+
+      <!-- Top Navigation Bar -->
+      <header class="top-nav">
+        <div class="brand-group">
+          <div class="brand-mark">
+            <span class="brand-diamond"></span>
+            <span class="brand-name">KAMI <span class="brand-slash">//</span> ZERO</span>
+          </div>
+          <span class="stage-badge" id="stage-badge">STAGE 01 · SUSPENDED SHATTER</span>
+        </div>
+
+        <div class="nav-actions">
+          <button id="audio-toggle" class="glass-pill-btn" type="button" aria-label="Toggle Sound">
+            <span class="audio-bars" id="audio-bars">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span id="audio-label">SOUND ON</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- STAGE 1 OVERLAY: Shattered / Hold-to-Fold State -->
+      <section id="stage-shattered" class="stage-overlay is-active">
+        <div class="shatter-center-header" id="shatter-center-header">
+          <!-- Glowing Fracture Cracks that slice through the text as you hold -->
+          <svg
+            id="title-cracks-svg"
+            class="title-cracks-svg"
+            viewBox="0 0 760 220"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path class="crack-line" d="M85,30 L165,92 L132,148 L218,195" />
+            <path class="crack-line" d="M265,18 L312,88 L398,64 L448,136 L412,198" />
+            <path class="crack-line" d="M518,24 L478,96 L568,128 L645,190" />
+            <path class="crack-line" d="M125,88 L312,88 L478,96 L660,70" />
+            <path class="crack-line" d="M185,146 L365,134 L548,156" />
+          </svg>
+          <!-- Flying Triangular Origami & Crystal Splinters -->
+          <div id="title-splinters-layer" class="title-splinters-layer" aria-hidden="true"></div>
+
+          <h1
+            id="shatter-title"
+            class="shatter-title"
+            aria-label="Fragments of potential, waiting to fold into form."
+          >
+            <span class="shatter-line" data-line="0">Fragments of potential,</span>
+            <span class="shatter-line is-italic" data-line="1">waiting to fold into form.</span>
+          </h1>
+        </div>
+
+        <!-- Bottom-left giant monospace progress counter (echoing why.zero.university) -->
+        <div class="loader-counter-wrap">
+          <div class="counter-meta">
+            <span class="counter-tag">FOLD INTEGRITY</span>
+            <span class="counter-sub" id="counter-status">SUSPENDED IN ZERO-G</span>
+          </div>
+          <div class="giant-counter-row">
+            <span id="fold-counter">00</span>
+            <span class="counter-percent">%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- STAGE 2 OVERLAY: Revealed Hero Page (After BOOM Flash) -->
+      <section id="stage-revealed" class="stage-overlay" aria-hidden="true">
+        <!-- Desert Sandstorm Atmospheric Vignette -->
+        <div id="desert-dust-veil" class="desert-dust-veil" aria-hidden="true"></div>
+
+        <!-- Editorial Left Column (Texts slowly reveal while Wind Gust is active, and pause when stopped) -->
+        <div class="hero-editorial" id="hero-editorial">
+          <div class="hero-eyebrow-row dust-progressive" data-reveal-start="0.00" data-reveal-end="0.22">
+            <span class="badge-live" id="hero-badge-live">ORIGAMI (折り紙)</span>
+            <span class="eyebrow-mono">THE ART OF FOLDED PAPER // EST. 6TH CENTURY</span>
+          </div>
+          <h2 class="hero-headline dust-progressive" data-reveal-start="0.08" data-reveal-end="0.38">
+            From a single uncut square, <em>a living crane takes flight.</em>
+          </h2>
+          <p class="hero-description dust-progressive" data-reveal-start="0.26" data-reveal-end="0.56">
+            <strong>Origami</strong> (<em>ori</em> = folding, <em>kami</em> = paper) is the traditional Japanese art of transforming a flat, uncut square sheet of paper into sculpture through geometric creases alone—using <strong>zero cuts and zero glue</strong>.
+          </p>
+
+          <!-- Wind Gust & Shatter Controls (Always visible in Stage 2 so user can start/stop Wind Gust anytime) -->
+          <div class="hero-cta-row">
+            <button id="btn-impulse-wing" class="wind-gust-primary-btn" type="button">
+              <span class="wind-gust-btn-fill" id="wind-gust-btn-fill"></span>
+              <span class="wind-gust-sand-veil" id="wind-gust-sand-veil" aria-hidden="true"></span>
+              <svg class="wind-gust-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+              </svg>
+              <span id="wind-gust-btn-label">Trigger Wind Gust (Hold)</span>
+            </button>
+            <button id="btn-shatter-replay" class="secondary-glass-btn" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>Shatter &amp; Replay Boom</span>
+            </button>
+          </div>
+          <div class="wind-gust-hint" id="wind-gust-hint">
+            Hold (or click) <strong>Trigger Wind Gust</strong> to flap wings &amp; slowly uncover Origami facts from the desert dust · Release to stop
+          </div>
+
+          <div class="handwritten-note dust-progressive" data-reveal-start="0.45" data-reveal-end="0.72">
+            <span>Scroll Up/Down anywhere (or drag the slider) to unfold &amp; refold ↕</span>
+          </div>
+        </div>
+
+        <!-- 3 Floating Origami Washi Shards with the 3 Origami Informations inscribed clearly on the shards -->
+        <div class="spatial-cards-layer" id="spatial-cards-layer">
+          <!-- Dynamic SVG Crease-Tether Lines connecting the 3 Information Shards to the 3D Crane's Shards -->
+          <svg
+            id="shard-tethers-svg"
+            class="shard-tethers-svg"
+            viewBox="0 0 1920 1080"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="tetherLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ffe3a3" stop-opacity="0.85" />
+                <stop offset="60%" stop-color="#f2c16b" stop-opacity="0.52" />
+                <stop offset="100%" stop-color="#c95b3c" stop-opacity="0.75" />
+              </linearGradient>
+            </defs>
+            <g id="tether-group-wings" class="shard-tether-group" opacity="0">
+              <line id="tether-line-wings" class="shard-tether-line" x1="0" y1="0" x2="0" y2="0" />
+              <polygon id="tether-node-wings" class="shard-tether-node" points="0,-5 5,0 0,5 -5,0" />
+            </g>
+            <g id="tether-group-core" class="shard-tether-group" opacity="0">
+              <line id="tether-line-core" class="shard-tether-line" x1="0" y1="0" x2="0" y2="0" />
+              <polygon id="tether-node-core" class="shard-tether-node" points="0,-5 5,0 0,5 -5,0" />
+            </g>
+            <g id="tether-group-tail" class="shard-tether-group" opacity="0">
+              <line id="tether-line-tail" class="shard-tether-line" x1="0" y1="0" x2="0" y2="0" />
+              <polygon id="tether-node-tail" class="shard-tether-node" points="0,-5 5,0 0,5 -5,0" />
+            </g>
+          </svg>
+
+          <div class="shards-stack">
+            <!-- SHARD 01: Swept Wing Origami Shard (THE TYPE: ORIZURU) -->
+            <article
+              class="spatial-card origami-info-shard shard-shape-wing dust-progressive"
+              data-reveal-start="0.40"
+              data-reveal-end="0.68"
+              data-focus="wings"
+              tabindex="0"
+            >
+              <div class="shard-paper-inner">
+                <!-- Clean Full-Coverage Folded Washi Paper Shard SVG (No lines cutting through text) -->
+                <svg class="shard-paper-svg" viewBox="0 0 380 164" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="washiPaperFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#fdf8ee" />
+                      <stop offset="65%" stop-color="#f5ead4" />
+                      <stop offset="100%" stop-color="#ead9b9" />
+                    </linearGradient>
+                    <linearGradient id="terracottaFlap" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#cc5637" />
+                      <stop offset="100%" stop-color="#8c321b" />
+                    </linearGradient>
+                  </defs>
+                  <!-- Main Sunlit Ivory Kozo Washi Shard Body (Wide safe zone so text never clips) -->
+                  <polygon
+                    class="shard-main-poly"
+                    points="18,4 352,4 376,28 368,154 344,160 10,160 4,136"
+                    fill="url(#washiPaperFill)"
+                    stroke="#6b4824"
+                    stroke-width="2"
+                  />
+                  <!-- Subtle Bottom-Right Corner Valley Fold Shading (Outside reading area) -->
+                  <polygon points="332,160 368,154 376,28 358,160" fill="#dfc9a0" opacity="0.55" />
+                  <!-- Terracotta Folded Dog-Ear Corner Flap (Top-Right Corner) -->
+                  <polygon points="352,4 376,28 348,28" fill="url(#terracottaFlap)" stroke="#6b4824" stroke-width="1.2" />
+                  <!-- Terracotta Folded Corner Accent (Top-Left) -->
+                  <polygon points="4,24 18,4 22,22" fill="url(#terracottaFlap)" />
+                </svg>
+
+                <span class="shard-hanko-stamp" aria-hidden="true">鶴</span>
+
+                <div class="shard-content">
+                  <div class="card-index-row">
+                    <span class="card-index">01 · THE TYPE — ORIZURU (折鶴)</span>
+                  </div>
+                  <h3 class="card-title">The Ceremonial Paper Crane</h3>
+                  <p class="card-body">
+                    The <em>Orizuru</em> (folded red-crowned crane) is the most iconic classic form of traditional Japanese origami, first documented in 1797.
+                  </p>
+                </div>
+              </div>
+            </article>
+
+            <!-- SHARD 02: Diamond Kite Origami Shard (THE CRAFT: KOZO WASHI & PURE FOLDING) -->
+            <article
+              class="spatial-card origami-info-shard shard-shape-core dust-progressive"
+              data-reveal-start="0.58"
+              data-reveal-end="0.85"
+              data-focus="core"
+              tabindex="0"
+            >
+              <div class="shard-paper-inner">
+                <svg class="shard-paper-svg" viewBox="0 0 380 164" preserveAspectRatio="none" aria-hidden="true">
+                  <polygon
+                    class="shard-main-poly"
+                    points="8,16 26,4 364,6 376,142 354,160 18,158 4,140"
+                    fill="url(#washiPaperFill)"
+                    stroke="#6b4824"
+                    stroke-width="2"
+                  />
+                  <polygon points="338,160 376,142 364,6 354,160" fill="#dfc9a0" opacity="0.55" />
+                  <!-- Terracotta Folded Corner Flaps -->
+                  <polygon points="8,16 26,4 24,20" fill="url(#terracottaFlap)" stroke="#6b4824" stroke-width="1.2" />
+                  <polygon points="354,160 376,142 350,144" fill="url(#terracottaFlap)" stroke="#6b4824" stroke-width="1.2" />
+                </svg>
+
+                <span class="shard-hanko-stamp" aria-hidden="true">紙</span>
+
+                <div class="shard-content">
+                  <div class="card-index-row">
+                    <span class="card-index">02 · THE CRAFT — 1 SQUARE, 0 CUTS</span>
+                  </div>
+                  <h3 class="card-title">Kozo Washi &amp; Pure Folding</h3>
+                  <p class="card-body">
+                    Hand-folded from one uncut square of mulberry <em>Kozo Washi</em> paper using only mountain and valley creases scored with a <em>Hera</em> folder.
+                  </p>
+                </div>
+              </div>
+            </article>
+
+            <!-- SHARD 03: Chevron Tail Origami Shard (THE MEANING: SENBAZURU) -->
+            <article
+              class="spatial-card origami-info-shard shard-shape-tail dust-progressive"
+              data-reveal-start="0.74"
+              data-reveal-end="1.00"
+              data-focus="tail"
+              tabindex="0"
+            >
+              <div class="shard-paper-inner">
+                <svg class="shard-paper-svg" viewBox="0 0 380 164" preserveAspectRatio="none" aria-hidden="true">
+                  <polygon
+                    class="shard-main-poly"
+                    points="16,4 356,6 376,26 366,158 22,160 4,142 8,18"
+                    fill="url(#washiPaperFill)"
+                    stroke="#6b4824"
+                    stroke-width="2"
+                  />
+                  <polygon points="340,159 366,158 376,26 356,158" fill="#dfc9a0" opacity="0.55" />
+                  <!-- Terracotta Folded Corner Flaps -->
+                  <polygon points="356,6 376,26 350,26" fill="url(#terracottaFlap)" stroke="#6b4824" stroke-width="1.2" />
+                  <polygon points="4,142 22,160 22,142" fill="url(#terracottaFlap)" stroke="#6b4824" stroke-width="1.2" />
+                </svg>
+
+                <span class="shard-hanko-stamp" aria-hidden="true">千</span>
+
+                <div class="shard-content">
+                  <div class="card-index-row">
+                    <span class="card-index">03 · THE MEANING — SENBAZURU (千羽鶴)</span>
+                  </div>
+                  <h3 class="card-title">Peace, Hope &amp; 1,000 Cranes</h3>
+                  <p class="card-body">
+                    In Japanese legend, the sacred crane lives 1,000 years. Folding 1,000 cranes (<em>Senbazuru</em>) grants a wish of healing, peace, and good fortune.
+                  </p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- Bottom Interactive Scrubber & Camera Dock -->
+        <footer class="bottom-scrubber-dock">
+          <div class="scrubber-control-group">
+            <div class="scrubber-labels">
+              <span class="scrubber-title">TIME SCRUBBER // FOLD EXPLOSION</span>
+              <span class="scrubber-readout" id="scrubber-readout">100% ASSEMBLED</span>
+            </div>
+            <div class="scrubber-track-wrap">
+              <span class="scrubber-bound">0% SHATTER</span>
+              <input
+                id="timeline-scrubber"
+                class="timeline-slider"
+                type="range"
+                min="0"
+                max="1000"
+                value="1000"
+                aria-label="Scrub origami fold progress"
+              />
+              <span class="scrubber-bound">100% FORM</span>
+            </div>
+          </div>
+
+          <div class="camera-presets-group">
+            <span class="preset-label">CAMERA VIEW</span>
+            <div class="preset-pills">
+              <button class="preset-btn is-active" data-cam="default" type="button">Hero Orbit</button>
+              <button class="preset-btn" data-cam="wings" type="button">Wing Foil</button>
+              <button class="preset-btn" data-cam="core" type="button">Core Crest</button>
+              <button class="preset-btn" data-cam="tail" type="button">Tail Spire</button>
+            </div>
+          </div>
+        </footer>
+      </section>
+    </div>
+
+  </body>
+</html>
